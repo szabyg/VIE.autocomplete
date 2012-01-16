@@ -1,0 +1,62 @@
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="stylesheet" href="lib/jquery/jquery-ui.min.css" />
+    <link rel="stylesheet" href="lib/Smoothness/jquery.ui.all.css" />
+
+    <script type="text/javascript" src="lib/jquery-1.5.1.js"></script>
+    <script type="text/javascript" src="lib/jquery-ui.1.9m5.js"></script>
+    <script type="text/javascript" src="lib/underscore-min.js"></script>
+    <script type="text/javascript" src="lib/backbone.js"></script>
+
+    <script type="text/javascript" src="lib/jquery.rdfquery.debug.js"></script>
+    <script type="text/javascript" src="lib/vie/vie-latest.debug.js"></script>
+
+    <script type="text/javascript" src="lib/vie.autocomplete.js"></script>
+
+    <script>
+    $(document).ready(function(){ _.defer(function(){
+        var vie = new VIE();
+        vie.use(new vie.StanbolService({
+            url : "http://dev.iks-project.eu:8081",
+            proxyDisabled: true
+        }));
+
+        $('.search')
+        .vieAutocomplete({
+            vie: vie,
+            select: function(e, ui){
+                log(ui);
+            }
+        });
+        function log(msg) {
+            jQuery("#results").append( JSON.stringify(msg) + "<br/" + ">" );
+        }
+    })});
+    </script>
+    <body  xmlns:sioc     = "http://rdfs.org/sioc/ns#"
+         xmlns:schema   = "http://www.schema.org/"
+         xmlns:enhancer = "http://fise.iks-project.eu/ontology/"
+         xmlns:dc       = "http://purl.org/dc/terms/">
+        <h2>VIE autocomplete widget</h2>
+        <h3>Demo</h3>
+        <span style="background: fff;"><label for="search">Search:</label> <input id="search" class="search"></span>
+        <div>
+            <div>
+                <h4>results:</h4>
+                <div id="results">
+                </div>
+            </div>
+        </div>
+        <h3>Usage</h3>
+        <pre>
+    $('.search')
+    .vieAutocomplete({
+        vie: vie,
+        select: function(e, ui){
+            console.log(ui);
+        }
+    });
+        </pre>
+    </body>
+</html>
