@@ -27,38 +27,54 @@
             vie: vie,
             select: function(e, ui){
                 log(ui);
-            }
+            },
+            urifield: jQuery("#urifield")
         });
         function log(msg) {
             jQuery("#results").append( JSON.stringify(msg) + "<br/" + ">" );
         }
     })});
     </script>
-    <body  xmlns:sioc     = "http://rdfs.org/sioc/ns#"
+    <body xmlns:sioc    = "http://rdfs.org/sioc/ns#"
          xmlns:schema   = "http://www.schema.org/"
          xmlns:enhancer = "http://fise.iks-project.eu/ontology/"
          xmlns:dc       = "http://purl.org/dc/terms/">
         <a href="https://github.com/szabyg/VIE.autocomplete"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
 
         <h2>VIE autocomplete widget</h2>
+        <p>
+            VIE autocomplete uses the VIE.find service method to make autocomplete suggestions.<br/>
+            The VIE.find method can query different backend or frontend data sources.<br/>
+            This demo goes to the default Apache Stanbol backend.
+        </p>
         <h3>Demo</h3>
-        <span style="background: fff;"><label for="search">Search:</label> <input id="search" class="search"></span>
-        <div>
+        <span style="background: fff;">
+            <label for="search">Search:</label> <input id="search" size="60" class="search"/>
+            <br/>
+            <label for="urifield">Selected URI:</label> <input id="urifield" size="60"/>
+        </span>
             <div>
-                <h4>results:</h4>
-                <div id="results">
-                </div>
+            <div>
+                <h4>selected:</h4>
+                <div id="results"></div>
             </div>
         </div>
         <h3>Usage</h3>
         <pre>
-    $('.search')
-    .vieAutocomplete({
-        vie: vie,
-        select: function(e, ui){
-            console.log(ui);
-        }
-    });
+var vie = new VIE();
+vie.use(new vie.StanbolService({
+    url : "http://dev.iks-project.eu:8081",
+    proxyDisabled: true
+}));
+
+$('.search')
+.vieAutocomplete({
+    vie: vie,
+    select: function(e, ui){
+        console.log(ui);
+    }
+});
         </pre>
+        <a href="docs/vie.autocomplete.html">Documented source code</a>
     </body>
 </html>

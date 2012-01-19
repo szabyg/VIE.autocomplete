@@ -1,3 +1,22 @@
+# VIE autocomplete uses the VIE.find service method to make autocomplete suggestions.
+# The VIE.find method can query different backend or frontend data sources.
+# This demo goes to the default Apache Stanbol backend.
+#
+#     var vie = new VIE();
+#     vie.use(new vie.StanbolService({
+#         url : "http://dev.iks-project.eu:8081",
+#         proxyDisabled: true
+#     }));
+#
+#     $('.search')
+#     .vieAutocomplete({
+#         vie: vie,
+#         select: function(e, ui){
+#             console.log(ui);
+#         }
+#     });
+
+# default VIE instance with stanbol service
 vie = new VIE()
 vie.use(new vie.StanbolService({
     url : "http://dev.iks-project.eu:8080",
@@ -5,23 +24,29 @@ vie.use(new vie.StanbolService({
 }));
 
 jQuery.widget "IKS.vieAutocomplete",
+    # The widget **options** are:
     options:
+        # * VIE instance.
         vie: vie
+        # * callback for selection event
         select: (e, ui) ->
-        _logger: console
-        # Define Entity properties for finding depiction
+        urifield: null
+        # * VIE service to use (right now only one)
+        services: "stanbol"
+        debug: false
+        # * Define Entity properties for finding depiction
         depictionProperties: [
             "foaf:depiction"
             "schema:thumbnail"
         ]
-        # Define Entity properties for finding the label
+        # * Define Entity properties for finding the label
         labelProperties: [
             "rdfs:label"
             "skos:prefLabel"
             "schema:name"
             "foaf:name"
         ]
-        # Define Entity properties for finding the description
+        # * Define Entity properties for finding the description
         descriptionProperties: [
             "rdfs:comment"
             "skos:note"
@@ -45,9 +70,10 @@ jQuery.widget "IKS.vieAutocomplete",
                         .replace /_/g, "&nbsp;"
                     "Subject(s): #{labels.join ', '}."
         ]
-        # If label and description is not available in the user's language 
+        # * If label and description is not available in the user's language 
         # look for a fallback.
         fallbackLanguage: "en"
+        # * type label definition
         getTypes: ->
             [
                 uri:   "#{@ns.dbpedia}Place"
@@ -62,6 +88,7 @@ jQuery.widget "IKS.vieAutocomplete",
                 uri:   "#{@ns.skos}Concept"
                 label: 'Concept'
             ]
+        # * entity source label definition
         getSources: ->
             [
                 uri: "http://dbpedia.org/resource/"
@@ -71,14 +98,24 @@ jQuery.widget "IKS.vieAutocomplete",
                 label: "geonames"
             ]
     _create: ->
+        @_logger = if @options.debug then console else 
+            info: ->
+            warn: ->
+            error: ->
+            log: ->
+        @_instantiateAutocomplete()
+
+    _instantiateAutocomplete: ->
         widget = @
-        @_logger = @options._logger
         @element
         .autocomplete
+            # define where do suggestions come from
             source: (req, resp) ->
-                widget.options._logger.info "req:", req
+                widget._logger.info "req:", req
+                # call VIE.find
                 widget.options.vie.find({term: "#{req.term}#{if req.term.length > 3 then '*'  else ''}"})
-                .using('stanbol').execute()
+                .using(widget.options.services).execute()
+                # error handling
                 .fail (e) ->
                     widget._logger.error "Something wrong happened at stanbol find:", e
                 .success (entityList) ->
@@ -86,6 +123,8 @@ jQuery.widget "IKS.vieAutocomplete",
                     widget._logger.info "resp:", _(entityList).map (ent) ->
                         ent.id
                     limit = 10
+                    # remove descriptive entity
+                    # TODO move to VIE
                     entityList = _(entityList).filter (ent) ->
                         return false if ent.getSubject().replace(/^<|>$/g, "") is "http://www.iks-project.eu/ontology/rick/query/QueryResultSet"
                         return true
@@ -93,8 +132,10 @@ jQuery.widget "IKS.vieAutocomplete",
                         return {
                             key: entity.getSubject().replace /^<|>$/g, ""
                             label: "#{widget._getLabel entity} @ #{widget._sourceLabel entity.id}"
+                            value: widget._getLabel entity
                         }
                     resp res
+            # create tooltip on menu elements when menu opens
             open: (e, ui) ->
                 widget._logger.info "autocomplete.open", e, ui
                 if widget.options.showTooltip
@@ -115,6 +156,8 @@ jQuery.widget "IKS.vieAutocomplete",
             select: (e, ui) =>
                 @options.select e, ui
                 @_logger.info "autocomplete.select", e.target, ui
+                if widget.options.urifield
+                    widget.options.urifield.val ui.item.key
 
     _getUserLang: ->
         window.navigator.language.split("-")[0]
@@ -163,7 +206,7 @@ jQuery.widget "IKS.vieAutocomplete",
         ""
     # make a label for the entity source based on options.getSources()
     _sourceLabel: (src) ->
-        console.warn "No source" unless src
+        @_logger.warn "No source" unless src
         return "" unless src
         sources = @options.getSources()
         sourceObj = _(sources).detect (s) -> src.indexOf(s.uri) isnt -1
