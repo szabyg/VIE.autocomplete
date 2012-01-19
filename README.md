@@ -2,6 +2,10 @@
 ## Introduction
 ## Features
 ## Options
+language:
+type(s):
+label: 
+ns:
 ## Methods
 ## Events
 ## Dependencies
