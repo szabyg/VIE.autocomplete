@@ -194,9 +194,14 @@ jQuery.widget "IKS.vieAutocomplete",
                     labelArr = _.flatten [entity.get property]
                     # select the label in the user's language
                     label = _(labelArr).detect (label) =>
-                        true if label.indexOf("@#{lang}") > -1
+                        if typeof label is "object" and label["@lang"] is lang
+                            return true
+                        # compatibility code, to be removed after 2012 May, turtle strings in vie entities are obsolete
+                        if label.toString().indexOf("@#{lang}") > -1
+                            return true
                     if label
-                        return label.replace /(^\"*|\"*@..$)/g, ""
+                        # compatibility code, to be removed after 2012 May
+                        return label.toString().replace /(^\"*|\"*@..$)/g, ""
                 # property can be an object like {property: "skos:broader", makeLabel: function(propertyValueArr){return "..."}}
                 else if typeof property is "object" and entity.get property.property
                     valueArr = _.flatten [entity.get property.property]
