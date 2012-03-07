@@ -194,7 +194,7 @@ jQuery.widget "IKS.vieAutocomplete",
                     labelArr = _.flatten [entity.get property]
                     # select the label in the user's language
                     label = _(labelArr).detect (label) =>
-                        if typeof label is "object" and label["@lang"] is lang
+                        if typeof label is "object" and label["@language"] is lang
                             return true
                         # compatibility code, to be removed after 2012 May, turtle strings in vie entities are obsolete
                         if label.toString().indexOf("@#{lang}") > -1
