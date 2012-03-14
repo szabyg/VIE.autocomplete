@@ -31,6 +31,8 @@ jQuery.widget "IKS.vieAutocomplete",
         # * callback for selection event
         select: (e, ui) ->
         urifield: null
+        # * The field to search in.
+        field: "rdfs:label"
         # * VIE service to use (right now only one)
         services: "stanbol"
         debug: false
@@ -112,8 +114,22 @@ jQuery.widget "IKS.vieAutocomplete",
             # define where do suggestions come from
             source: (req, resp) ->
                 widget._logger.info "req:", req
+                properties = _.flatten [
+                    widget.options.labelProperties
+                    widget.options.descriptionProperties
+                    widget.options.depictionProperties
+                ]
+                properties = _(properties).map (prop) ->
+                    if typeof prop is "object"
+                        prop.property
+                    else
+                        prop
                 # call VIE.find
-                widget.options.vie.find({term: "#{req.term}#{if req.term.length > 3 then '*'  else ''}"})
+                widget.options.vie.find({
+                    term: "#{req.term}#{if req.term.length > 3 then '*'  else ''}"
+                    field: widget.options.field
+                    properties: properties
+                })
                 .using(widget.options.services).execute()
                 # error handling
                 .fail (e) ->
@@ -186,29 +202,53 @@ jQuery.widget "IKS.vieAutocomplete",
         @_getPreferredLangForPreferredProperty entity, preferredFields, preferredLanguages
 
     _getPreferredLangForPreferredProperty: (entity, preferredFields, preferredLanguages) ->
+        resArr = []
         # Try to find a label in the preferred language
-        for lang in preferredLanguages
-            for property in preferredFields
+        for lang, l in preferredLanguages
+            for property, p in preferredFields
+                labelArr = null
                 # property can be a string e.g. "skos:prefLabel"
                 if typeof property is "string" and entity.get property
                     labelArr = _.flatten [entity.get property]
-                    # select the label in the user's language
-                    label = _(labelArr).detect (label) =>
-                        if typeof label is "object" and label["@language"] is lang
-                            return true
-                        # compatibility code, to be removed after 2012 May, turtle strings in vie entities are obsolete
-                        if label.toString().indexOf("@#{lang}") > -1
-                            return true
-                    if label
-                        # compatibility code, to be removed after 2012 May
-                        return label.toString().replace /(^\"*|\"*@..$)/g, ""
+                    _(labelArr).each (label) =>
+                        # The score is a natural number with 0 for the 
+                        # best candidate with the first preferred language
+                        # and first preferred property
+                        score = p
+                        labelLang = label["@language"]
+                        # legacy code for compatibility with uotdated stanbol, 
+                        # to be removed after may 2012
+                        if typeof label is "string" and (label.indexOf("@") is label.length-3 or label.indexOf("@") is label.length-5)
+                            labelLang = label.replace /(^\"*|\"*@)..(..)?$/g, ""
+                        # end of legacy code
+
+                        if labelLang
+                            if labelLang is lang
+                                score += l
+                            else
+                                score += 20
+                        else
+                            score += 10
+                        resArr.push
+                            score: score
+                            value: label.toString()
+                            # legacy code for compatibility with uotdated stanbol, 
+                            # to be removed after may 2012
+                            .replace /(^\"*|\"*@..$)/g, ""
+                            # end of legacy code
+
                 # property can be an object like {property: "skos:broader", makeLabel: function(propertyValueArr){return "..."}}
                 else if typeof property is "object" and entity.get property.property
                     valueArr = _.flatten [entity.get property.property]
                     valueArr = _(valueArr).map (termUri) ->
                         if termUri.isEntity then termUri.getSubject() else termUri
-                    return property.makeLabel valueArr
-        ""
+                    resArr.push
+                        score: p
+                        value: property.makeLabel valueArr
+        resArr = _(resArr).sortBy (a) ->
+            a.score
+        @_logger.info resArr[0].value, entity.getSubject(), entity, preferredFields, preferredLanguages, resArr
+        return resArr[0].value
     # make a label for the entity source based on options.getSources()
     _sourceLabel: (src) ->
         @_logger.warn "No source" unless src
