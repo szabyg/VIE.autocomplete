@@ -75,6 +75,7 @@ jQuery.widget "IKS.vieAutocomplete",
         # * If label and description is not available in the user's language 
         # look for a fallback.
         fallbackLanguage: "en"
+        styleClass: "vie-autocomplete"
         # * type label definition
         getTypes: ->
             [
@@ -105,8 +106,12 @@ jQuery.widget "IKS.vieAutocomplete",
             warn: ->
             error: ->
             log: ->
+        @menuContainer = jQuery "<span class='#{@options.styleClass}'/>"
+        @menuContainer.appendTo 'body'
         @_instantiateAutocomplete()
 
+    _destroy: ->
+        @menuContainer.remove()
     _instantiateAutocomplete: ->
         widget = @
         @element
@@ -142,7 +147,8 @@ jQuery.widget "IKS.vieAutocomplete",
                     # remove descriptive entity
                     # TODO move to VIE
                     entityList = _(entityList).filter (ent) ->
-                        return false if ent.getSubject().replace(/^<|>$/g, "") is "http://www.iks-project.eu/ontology/rick/query/QueryResultSet"
+                        return false if ent.getSubject().replace(/^<|>$/g, "") is 
+                          "http://www.iks-project.eu/ontology/rick/query/QueryResultSet"
                         return true
                     res = _(entityList.slice(0, limit)).map (entity) ->
                         return {
@@ -174,6 +180,7 @@ jQuery.widget "IKS.vieAutocomplete",
                 @_logger.info "autocomplete.select", e.target, ui
                 if widget.options.urifield
                     widget.options.urifield.val ui.item.key
+            appendTo: @menuContainer
 
     _getUserLang: ->
         window.navigator.language.split("-")[0]
@@ -194,61 +201,13 @@ jQuery.widget "IKS.vieAutocomplete",
     _getLabel: (entity) ->
         preferredFields = @options.labelProperties
         preferredLanguages = [@_getUserLang(), @options.fallbackLanguage]
-        @_getPreferredLangForPreferredProperty entity, preferredFields, preferredLanguages
+        VIE.Util.getPreferredLangForPreferredProperty entity, preferredFields, preferredLanguages
 
     _getDescription: (entity) ->
         preferredFields = @options.descriptionProperties
         preferredLanguages = [@_getUserLang(), @options.fallbackLanguage]
-        @_getPreferredLangForPreferredProperty entity, preferredFields, preferredLanguages
+        VIE.Util.getPreferredLangForPreferredProperty entity, preferredFields, preferredLanguages
 
-    _getPreferredLangForPreferredProperty: (entity, preferredFields, preferredLanguages) ->
-        resArr = []
-        # Try to find a label in the preferred language
-        for lang, l in preferredLanguages
-            for property, p in preferredFields
-                labelArr = null
-                # property can be a string e.g. "skos:prefLabel"
-                if typeof property is "string" and entity.get property
-                    labelArr = _.flatten [entity.get property]
-                    _(labelArr).each (label) =>
-                        # The score is a natural number with 0 for the 
-                        # best candidate with the first preferred language
-                        # and first preferred property
-                        score = p
-                        labelLang = label["@language"]
-                        # legacy code for compatibility with uotdated stanbol, 
-                        # to be removed after may 2012
-                        if typeof label is "string" and (label.indexOf("@") is label.length-3 or label.indexOf("@") is label.length-5)
-                            labelLang = label.replace /(^\"*|\"*@)..(..)?$/g, ""
-                        # end of legacy code
-
-                        if labelLang
-                            if labelLang is lang
-                                score += l
-                            else
-                                score += 20
-                        else
-                            score += 10
-                        resArr.push
-                            score: score
-                            value: label.toString()
-                            # legacy code for compatibility with uotdated stanbol, 
-                            # to be removed after may 2012
-                            .replace /(^\"*|\"*@..$)/g, ""
-                            # end of legacy code
-
-                # property can be an object like {property: "skos:broader", makeLabel: function(propertyValueArr){return "..."}}
-                else if typeof property is "object" and entity.get property.property
-                    valueArr = _.flatten [entity.get property.property]
-                    valueArr = _(valueArr).map (termUri) ->
-                        if termUri.isEntity then termUri.getSubject() else termUri
-                    resArr.push
-                        score: p
-                        value: property.makeLabel valueArr
-        resArr = _(resArr).sortBy (a) ->
-            a.score
-        @_logger.info resArr[0].value, entity.getSubject(), entity, preferredFields, preferredLanguages, resArr
-        return resArr[0].value
     # make a label for the entity source based on options.getSources()
     _sourceLabel: (src) ->
         @_logger.warn "No source" unless src
