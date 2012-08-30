@@ -37,6 +37,7 @@ jQuery.widget "IKS.vieAutocomplete",
         services: "stanbol"
         debug: false
         # * Define Entity properties for finding depiction
+        showTooltip: true
         depictionProperties: [
             "foaf:depiction"
             "schema:thumbnail"
@@ -155,6 +156,8 @@ jQuery.widget "IKS.vieAutocomplete",
                             key: entity.getSubject().replace /^<|>$/g, ""
                             label: "#{widget._getLabel entity} @ #{widget._sourceLabel entity.id}"
                             value: widget._getLabel entity
+                            getUri: ->
+                              @key
                         }
                     resp res
             # create tooltip on menu elements when menu opens
@@ -181,6 +184,39 @@ jQuery.widget "IKS.vieAutocomplete",
                 if widget.options.urifield
                     widget.options.urifield.val ui.item.key
             appendTo: @menuContainer
+    _createPreview: (uri, response) ->
+      success = (cacheEntity) =>
+        html = ""
+        picSize = 100
+        depictionUrl = @_getDepiction cacheEntity, picSize
+        if depictionUrl
+          html += "<img style='float:left;padding: 5px;width: #{picSize}px' src='#{depictionUrl.substring 1, depictionUrl.length-1}'/>"
+        descr = @_getDescription cacheEntity
+        unless descr
+          @_logger.warn "No description found for", cacheEntity
+          descr = "No description found."
+        html += "<div style='padding 5px;width:250px;float:left;'><small>#{descr}</small></div>"
+        @_logger.info "tooltip for #{uri}: cacheEntry loaded", cacheEntity
+        # workaround for a tooltip widget bug
+        # setTimeout ->
+        response html
+        # , 200
+
+      fail = (e) =>
+        @_logger.error "error loading #{uri}", e
+        response "error loading entity for #{uri}"
+      jQuery(".ui-tooltip").remove()
+      # @options.cache.get uri, @, success, fail
+      entity = @options.vie.entities.get uri
+      @options.vie.load(entity: uri).using('stanbol').execute()
+      .success (res) ->
+        loadedEntity = _.detect res, (entity) ->
+          entity.fromReference(entity.getSubject()) is uri
+        success loadedEntity
+      if entity
+        success entity
+      else
+        fail()
 
     _getUserLang: ->
         window.navigator.language.split("-")[0]

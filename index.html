@@ -1,8 +1,9 @@
 <html>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <link rel="stylesheet" href="lib/jquery/jquery-ui.min.css" />
-    <link rel="stylesheet" href="lib/Smoothness/jquery.ui.all.css" />
+    <!--<link rel="stylesheet" href="lib/jquery/jquery-ui.min.css" />
+    <link rel="stylesheet" href="lib/Smoothness/jquery.ui.all.css" />-->
+      <link rel="stylesheet" href="http://code.jquery.com/ui/1.9.0-rc.1/themes/base/jquery-ui.css" />
 
     <script type="text/javascript" src="lib/jquery-1.5.1.js"></script>
     <script type="text/javascript" src="lib/jquery-ui.1.9m5.js"></script>
@@ -20,7 +21,8 @@
         var vie = new VIE();
         vie.use(new vie.StanbolService({
             url : "http://dev.iks-project.eu:8081",
-            proxyDisabled: true
+            proxyDisabled: true,
+            entityhub: {site: 'dbpedia'}
         }));
 
         $('.search')
