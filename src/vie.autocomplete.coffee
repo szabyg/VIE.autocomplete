@@ -174,15 +174,19 @@ jQuery.widget "IKS.vieAutocomplete",
                             effect: "show"
                             delay: 50
                         content: (response) ->
-                            uri = $( @ ).data()["item.autocomplete"].getUri()
-                            widget._createPreview uri, response
-                            "loading..."
+                          # fallbacks for different jquery ui versions
+                          item = $( @ ).data()["item.autocomplete"] or $( @ ).data()["uiAutocompleteItem"] or $( @ ).data()["ui-autocomplete-item"]
+                          uri = item.getUri()
+                          widget._createPreview uri, response
+                          "loading..."
             # An entity selected, annotate
             select: (e, ui) =>
+              _.defer =>
                 @options.select e, ui
                 @_logger.info "autocomplete.select", e.target, ui
                 if widget.options.urifield
-                    widget.options.urifield.val ui.item.key
+                  widget.options.urifield.val ui.item.key
+              true
             appendTo: @menuContainer
     _createPreview: (uri, response) ->
       success = (cacheEntity) =>
