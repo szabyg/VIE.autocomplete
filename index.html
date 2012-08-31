@@ -14,11 +14,12 @@
 
     <script type="text/javascript" src="lib/vie/vie-latest.debug.js"></script>
 
-    <script type="text/javascript" src="lib/vie.autocomplete.js"></script>
+      <script type="text/javascript" src="lib/vie.entitypreview.js"></script>
+      <script type="text/javascript" src="lib/vie.autocomplete.js"></script>
 
-    <script>
+      <script>
     $(document).ready(function(){ _.defer(function(){
-        var vie = new VIE();
+        var vie = window.vie = new VIE();
         vie.use(new vie.StanbolService({
             url : "http://dev.iks-project.eu:8081",
             proxyDisabled: true,
@@ -31,7 +32,8 @@
             select: function(e, ui){
                 log(ui);
             },
-            urifield: jQuery("#urifield")
+            urifield: jQuery("#urifield"),
+            stanbolIncludeLocalSite: true
         });
         function log(msg) {
             jQuery("#results").append( JSON.stringify(msg) + "<br/" + ">" );
@@ -78,6 +80,6 @@ $('.search')
     }
 });
         </pre>
-        <a href="docs/vie.autocomplete.html">Documented source code</a>
+        <a href="docs/index.html">Documented source code</a>
     </body>
 </html>
