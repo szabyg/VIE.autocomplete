@@ -33,7 +33,8 @@
                 log(ui);
             },
             urifield: jQuery("#urifield"),
-            stanbolIncludeLocalSite: true
+            stanbolIncludeLocalSite: true,
+            debug: true
         });
         function log(msg) {
             jQuery("#results").append( JSON.stringify(msg) + "<br/" + ">" );

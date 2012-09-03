@@ -131,15 +131,25 @@ jQuery.widget "IKS.vieAutocomplete",
                 return true
               mergedEntityList = mergedEntityList.concat entityList
               if waitingfor is 0
-                  res = _(mergedEntityList.slice(0, limit)).map (entity) =>
-                    return {
-                    key: entity.getSubject().replace /^<|>$/g, ""
-                    label: "#{@_getLabel entity} @ #{@_sourceLabel entity.id}"
-                    value: @_getLabel entity
-                    getUri: ->
-                      @key
-                    }
-                  resp res
+                # Sort by score
+                mergedEntityList = _.sortBy mergedEntityList, (e) ->
+                  s = e.get '<http://stanbol.apache.org/ontology/entityhub/query#score>'
+                  if typeof s is "object"
+                    s = _.max(s)
+                  return 0 - s
+                @_logger.info _(mergedEntityList).map (e) ->
+                  uri = e.getSubject()
+                  s = e.get '<http://stanbol.apache.org/ontology/entityhub/query#score>'
+                  return "#{uri}: #{s}"
+                res = _(mergedEntityList.slice(0, limit)).map (entity) =>
+                  return {
+                  key: entity.getSubject().replace /^<|>$/g, ""
+                  label: "#{@_getLabel entity} @ #{@_sourceLabel entity.id}"
+                  value: @_getLabel entity
+                  getUri: ->
+                    @key
+                  }
+                resp res
 
           waitingfor++
           @options.vie
@@ -155,7 +165,7 @@ jQuery.widget "IKS.vieAutocomplete",
           .success success
 
           if @options.stanbolIncludeLocalSite
-            console.log "stanbolIncludeLocalSite"
+            @_logger.log "stanbolIncludeLocalSite"
             waitingfor++
             @options.vie
             .find({
