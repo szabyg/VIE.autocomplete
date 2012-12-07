@@ -209,8 +209,18 @@ jQuery.widget "IKS.vieAutocomplete",
               $(@).entitypreview
                 vie: widget.options.vie
                 uri: uri
+            .first().parent().bind 'menufocus', (e, ui) =>
+              console.info 'fire focusin'
+              ui.item.trigger('focusin', ui)
+
+        focus: (e, ui) ->
+          console.info "focus", ui
         # An entity selected, annotate
         select: (e, ui) =>
+          $('.ui-menu-item', $(e.target).data().autocomplete.menu.activeMenu).each ->
+            $(@)
+            #.entitypreview('hide')
+            .entitypreview('destroy')
           _.defer =>
             @options.select e, ui
             @_logger.info "autocomplete.select", e.target, ui

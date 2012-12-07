@@ -208,8 +208,17 @@ TODO move to VIE</p>
               <span class="nv">uri = </span><span class="nx">item</span><span class="p">.</span><span class="nx">getUri</span><span class="p">()</span>
               <span class="nx">$</span><span class="p">(</span><span class="nx">@</span><span class="p">).</span><span class="nx">entitypreview</span>
                 <span class="nv">vie: </span><span class="nx">widget</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">vie</span>
-                <span class="nv">uri: </span><span class="nx">uri</span></pre></div></td></tr><tr id="section-23"><td class="docs"><div class="pilwrap"><a href="#section-23" class="pilcrow">&#182;</a></div><p>An entity selected, annotate</p>
+                <span class="nv">uri: </span><span class="nx">uri</span>
+            <span class="p">.</span><span class="nx">first</span><span class="p">().</span><span class="nx">parent</span><span class="p">().</span><span class="nx">bind</span> <span class="s">&#39;menufocus&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">e</span><span class="p">,</span> <span class="nx">ui</span><span class="p">)</span> <span class="o">=&gt;</span>
+              <span class="nx">console</span><span class="p">.</span><span class="nx">info</span> <span class="s">&#39;fire focusin&#39;</span>
+              <span class="nx">ui</span><span class="p">.</span><span class="nx">item</span><span class="p">.</span><span class="nx">trigger</span><span class="p">(</span><span class="s">&#39;focusin&#39;</span><span class="p">,</span> <span class="nx">ui</span><span class="p">)</span>
+
+        <span class="nv">focus: </span><span class="nf">(e, ui) -&gt;</span>
+          <span class="nx">console</span><span class="p">.</span><span class="nx">info</span> <span class="s">&quot;focus&quot;</span><span class="p">,</span> <span class="nx">ui</span></pre></div></td></tr><tr id="section-23"><td class="docs"><div class="pilwrap"><a href="#section-23" class="pilcrow">&#182;</a></div><p>An entity selected, annotate</p>
 </td><td class="code"><div class="highlight"><pre>        <span class="nv">select: </span><span class="p">(</span><span class="nx">e</span><span class="p">,</span> <span class="nx">ui</span><span class="p">)</span> <span class="o">=&gt;</span>
+          <span class="nx">$</span><span class="p">(</span><span class="s">&#39;.ui-menu-item&#39;</span><span class="p">,</span> <span class="nx">$</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">).</span><span class="nx">data</span><span class="p">().</span><span class="nx">autocomplete</span><span class="p">.</span><span class="nx">menu</span><span class="p">.</span><span class="nx">activeMenu</span><span class="p">).</span><span class="nx">each</span> <span class="o">-&gt;</span>
+            <span class="nx">$</span><span class="p">(</span><span class="nx">@</span><span class="p">)</span></pre></div></td></tr><tr id="section-24"><td class="docs"><div class="pilwrap"><a href="#section-24" class="pilcrow">&#182;</a></div><p>.entitypreview('hide')</p>
+</td><td class="code"><div class="highlight"><pre>            <span class="p">.</span><span class="nx">entitypreview</span><span class="p">(</span><span class="s">&#39;destroy&#39;</span><span class="p">)</span>
           <span class="nx">_</span><span class="p">.</span><span class="nx">defer</span> <span class="o">=&gt;</span>
             <span class="nx">@options</span><span class="p">.</span><span class="nx">select</span> <span class="nx">e</span><span class="p">,</span> <span class="nx">ui</span>
             <span class="nx">@_logger</span><span class="p">.</span><span class="nx">info</span> <span class="s">&quot;autocomplete.select&quot;</span><span class="p">,</span> <span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">,</span> <span class="nx">ui</span>
@@ -223,7 +232,7 @@ TODO move to VIE</p>
     <span class="nv">_getLabel: </span><span class="nf">(entity) -&gt;</span>
       <span class="nv">preferredFields = </span><span class="nx">@options</span><span class="p">.</span><span class="nx">labelProperties</span>
       <span class="nv">preferredLanguages = </span><span class="p">[</span><span class="nx">@_getUserLang</span><span class="p">(),</span> <span class="nx">@options</span><span class="p">.</span><span class="nx">fallbackLanguage</span><span class="p">]</span>
-      <span class="nx">VIE</span><span class="p">.</span><span class="nx">Util</span><span class="p">.</span><span class="nx">getPreferredLangForPreferredProperty</span> <span class="nx">entity</span><span class="p">,</span> <span class="nx">preferredFields</span><span class="p">,</span> <span class="nx">preferredLanguages</span></pre></div></td></tr><tr id="section-24"><td class="docs"><div class="pilwrap"><a href="#section-24" class="pilcrow">&#182;</a></div><p>make a label for the entity source based on options.getSources()</p>
+      <span class="nx">VIE</span><span class="p">.</span><span class="nx">Util</span><span class="p">.</span><span class="nx">getPreferredLangForPreferredProperty</span> <span class="nx">entity</span><span class="p">,</span> <span class="nx">preferredFields</span><span class="p">,</span> <span class="nx">preferredLanguages</span></pre></div></td></tr><tr id="section-25"><td class="docs"><div class="pilwrap"><a href="#section-25" class="pilcrow">&#182;</a></div><p>make a label for the entity source based on options.getSources()</p>
 </td><td class="code"><div class="highlight"><pre>    <span class="nv">_sourceLabel: </span><span class="nf">(src) -&gt;</span>
       <span class="nx">@_logger</span><span class="p">.</span><span class="nx">warn</span> <span class="s">&quot;No source&quot;</span> <span class="nx">unless</span> <span class="nx">src</span>
       <span class="k">return</span> <span class="s">&quot;&quot;</span> <span class="nx">unless</span> <span class="nx">src</span>
@@ -234,4 +243,4 @@ TODO move to VIE</p>
       <span class="k">else</span>
         <span class="nx">src</span><span class="p">.</span><span class="nx">split</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span>
 
-</pre></div></td></tr></tbody></table><div id="generated">generated Mon Sep 03 2012 12:50:38 GMT+0200 (CEST)  </div></div></body></html>
+</pre></div></td></tr></tbody></table><div id="generated">generated Fri Dec 07 2012 16:14:48 GMT+0100 (CET)  </div></div></body></html>
