@@ -202,7 +202,8 @@ jQuery.widget "IKS.vieAutocomplete",
         open: (e, ui) ->
           widget._logger.info "autocomplete.open", e, ui
           if widget.options.showTooltip
-            $('.ui-menu-item', $(this).data().autocomplete.menu.activeMenu)
+            uiMenu = $(this).data().autocomplete?.menu or $(this).data().uiAutocomplete.menu
+            $('.ui-menu-item', uiMenu.activeMenu)
             .each ->
               item = $( @ ).data()["item.autocomplete"] or $( @ ).data()["uiAutocompleteItem"] or $( @ ).data()["ui-autocomplete-item"]
               uri = item.getUri()
@@ -217,7 +218,8 @@ jQuery.widget "IKS.vieAutocomplete",
           console.info "focus", ui
         # An entity selected, annotate
         select: (e, ui) =>
-          $('.ui-menu-item', $(e.target).data().autocomplete.menu.activeMenu).each ->
+          uiMenu = $(e.target).data().autocomplete?.menu or $(e.target).data().uiAutocomplete.menu
+          $('.ui-menu-item', uiMenu.activeMenu).each ->
             $(@)
             #.entitypreview('hide')
             .entitypreview('destroy')
