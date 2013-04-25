@@ -117,44 +117,59 @@ jQuery.widget "IKS.vieAutocomplete",
           # call VIE.find
           # if @options.stanbolIncludeLocalSite TODO implement multiple find requests and result merging
           waitingfor = 0
+          # Final list of results
           mergedEntityList = []
-          success = (entityList) =>
-            _.defer =>
-              waitingfor--
-              @_logger.info "resp:", _(entityList).map (ent) ->
-                ent.id
-              limit = 10
-              # remove descriptive entity
-              # TODO move to VIE
-              entityList = _(entityList).filter (ent) ->
-                return false if ent.getSubject().replace(/^<|>$/g, "") is "http://www.iks-project.eu/ontology/rick/query/QueryResultSet"
-                return true
-              mergedEntityList = mergedEntityList.concat entityList
-              if waitingfor is 0
-                # Sort by score
-                mergedEntityList = _.sortBy mergedEntityList, (e) ->
-                  s = e.get '<http://stanbol.apache.org/ontology/entityhub/query#score>'
-                  if typeof s is "object"
-                    s = _.max(s)
-                  return 0 - s
-                @_logger.info _(mergedEntityList).map (e) ->
-                  uri = e.getSubject()
-                  s = e.get '<http://stanbol.apache.org/ontology/entityhub/query#score>'
-                  return "#{uri}: #{s}"
-                res = _(mergedEntityList.slice(0, limit)).map (entity) =>
-                  return {
-                  key: entity.getSubject().replace /^<|>$/g, ""
-                  label: "#{@_getLabel entity} @ #{@_sourceLabel entity.id}"
-                  value: @_getLabel entity
-                  getUri: ->
-                    @key
-                  }
-                resp res
+          # intermediate list of resultlists, indexed by priority
+          listOfResultLists = []
+          getSuccessCallback = (term, priority) =>
+            (entityList) =>
+              _.defer =>
+                waitingfor--
+                @_logger.info term, priority, "resp:", entityList
+                # @_logger.info priority, "resp:", _(entityList).map (ent) -> ent.id
+                limit = 10
+                # remove descriptive entity
+                # TODO move to VIE
+                entityList = _(entityList).filter (ent) ->
+                  return false if ent.getSubject().replace(/^<|>$/g, "") is "http://www.iks-project.eu/ontology/rick/query/QueryResultSet"
+                  return true
+                listOfResultLists[priority] = listOfResultLists[priority] or []
+                listOfResultLists[priority] = listOfResultLists[priority].concat entityList
+                # mergedEntityList = mergedEntityList.concat entityList
+                if waitingfor is 0
+                  # Sort by score
+                  console.info "listOfResultLists", listOfResultLists
+                  _.chain(listOfResultLists)
+                  .compact()
+                  .each (resultList) ->
+                    sortedList = _(resultList).sortBy (e) ->
+                      s = e.get '<http://stanbol.apache.org/ontology/entityhub/query#score>'
+                      if typeof s is "object"
+                        s = _.max(s)
+                      return 0 - s
+                    mergedEntityList = mergedEntityList.concat sortedList
+                  ###
+                  @_logger.info _(mergedEntityList).map (e) ->
+                    uri = e.getSubject()
+                    s = e.get '<http://stanbol.apache.org/ontology/entityhub/query#score>'
+                    return "#{uri}: #{s}"
+                  ###
+                  @_logger.info mergedEntityList
+                  res = _(mergedEntityList.slice(0, limit)).map (entity) =>
+                    return {
+                    key: entity.getSubject().replace /^<|>$/g, ""
+                    label: "#{@_getLabel entity} @ #{@_sourceLabel entity.id}"
+                    value: @_getLabel entity
+                    getUri: ->
+                      @key
+                    }
+                  resp res
 
           waitingfor++
+          term = "#{req.term}#{if req.term.length > 3 then '*'  else ''}"
           @options.vie
           .find({
-            term: "#{req.term}#{if req.term.length > 3 then '*'  else ''}"
+            term: term
             field: @options.field
             properties: properties
           })
@@ -162,14 +177,29 @@ jQuery.widget "IKS.vieAutocomplete",
           # error handling
           .fail (e) =>
             @_logger.error "Something wrong happened at stanbol find:", e
-          .success success
+          .success getSuccessCallback term, 3
+
+          if req.term.length > 3
+            waitingfor++
+            @options.vie
+              .find({
+                term: req.term
+                field: @options.field
+                properties: properties
+              })
+              .using(@options.services).execute()
+              # error handling
+              .fail (e) =>
+                @_logger.error "Something wrong happened at stanbol find:", e
+              .success getSuccessCallback req.term, 2
 
           if @options.stanbolIncludeLocalSite
             @_logger.log "stanbolIncludeLocalSite"
             waitingfor++
+            term = "#{req.term}#{if req.term.length > 3 then '*'  else ''}"
             @options.vie
             .find({
-              term: "#{req.term}#{if req.term.length > 3 then '*'  else ''}"
+              term: term
               field: @options.field
               properties: properties
               local: true
@@ -178,7 +208,7 @@ jQuery.widget "IKS.vieAutocomplete",
             # error handling
             .fail (e) =>
               @_logger.error "Something wrong happened at stanbol find:", e
-            .success success
+            .success getSuccessCallback 'local:' + term, 1
     _create: ->
       @_logger = if @options.debug then console else
         info: ->
@@ -195,7 +225,7 @@ jQuery.widget "IKS.vieAutocomplete",
       widget = @
       @element
       .autocomplete
-      # define where do suggestions come from
+        # define where do suggestions come from
         source: (req, resp) =>
           @options.source.apply @, [req, resp]
         # create tooltip on menu elements when menu opens
@@ -210,13 +240,17 @@ jQuery.widget "IKS.vieAutocomplete",
               $(@).entitypreview
                 vie: widget.options.vie
                 uri: uri
-            .first().parent().bind 'menufocus', (e, ui) =>
+            $('.ui-menu-item', uiMenu.activeMenu).first().parent().unbind('menufocus').bind 'menufocus', (e, ui) =>
               console.info 'fire focusin'
               ui.item.trigger('focusin', ui)
+            $('.ui-menu-item', uiMenu.activeMenu).first().parent().unbind('menublur').bind 'menublur', (e, ui) =>
+              $(':IKS-Entitypreview').trigger('blur')
 
         focus: (e, ui) ->
           console.info "focus", ui
         # An entity selected, annotate
+        blur: (e, ui) ->
+          console.info 'autocomplete.blur event', e, ui
         select: (e, ui) =>
           uiMenu = $(e.target).data().autocomplete?.menu or $(e.target).data().uiAutocomplete.menu
           $('.ui-menu-item', uiMenu.activeMenu).each ->
